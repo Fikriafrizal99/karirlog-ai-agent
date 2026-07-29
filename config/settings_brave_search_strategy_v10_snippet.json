@@ -1,0 +1,8 @@
+{
+  "search_lang": "",
+  "detail_query_hint": "",
+  "listing_query_exclusions": "-\"Find your ideal job\" -\"Temukan pekerjaan ideal\" -\"View all our\" -\"Lihat semua lowongan\"",
+  "search_pages_per_query": 2,
+  "strict_detail_filter": true,
+  "generic_detail_min_score": 4
+}

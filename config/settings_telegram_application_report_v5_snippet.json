@@ -1,0 +1,6 @@
+{
+  "telegram_application_report": {
+    "auto_after_portal_queue": true,
+    "limit": 50
+  }
+}

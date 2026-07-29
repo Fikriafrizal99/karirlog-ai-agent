@@ -1,0 +1,10 @@
+{
+  "require_target_role_match": true,
+  "role_match_min_ratio": 0.66,
+  "allow_global_remote": false,
+  "reject_company_pages": true,
+  "min_description_chars": 180,
+  "min_generic_description_chars": 250,
+  "max_structured_jobs_per_page": 1,
+  "max_explicit_age_days": 45
+}

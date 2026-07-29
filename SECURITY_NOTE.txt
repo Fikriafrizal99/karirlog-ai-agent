@@ -1,0 +1,9 @@
+File sensitif dan state lokal tidak disertakan dalam paket release ini:
+- .env
+- credentials.json
+- data/secrets/
+- data/karirlog.db
+- data/audit/
+- .venv/
+
+Salin kembali file kredensial dari instalasi asli bila diperlukan. Virtual environment dapat dibuat ulang melalui install_dependencies.bat atau saat menjalankan file .bat.

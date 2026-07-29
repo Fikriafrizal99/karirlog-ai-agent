@@ -1,0 +1,134 @@
+{
+  "http": {
+    "timeout_seconds": 20,
+    "retry_total": 2,
+    "retry_backoff_seconds": 0.8,
+    "user_agent": "KarirLog-AI-Agent/0.3 (+personal job discovery; respectful request rate)"
+  },
+  "sources": [
+    {
+      "type": "brave_search",
+      "name": "Brave - 6 Sumber Terpilih",
+      "enabled": true,
+      "api_key_env": "BRAVE_SEARCH_API_KEY",
+      "queries_per_run": 12,
+      "results_per_query": 20,
+      "country": "ID",
+      "search_lang": "",
+      "freshness": "pm",
+      "queries": [],
+      "hydrate_pages": true,
+      "allowed_domains": [],
+      "excluded_domains": [
+        "facebook.com",
+        "instagram.com",
+        "youtube.com",
+        "tiktok.com",
+        "jobleads.com",
+        "dailyremote.com",
+        "usaremotejobs.app",
+        "remotezest.up.railway.app",
+        "executiveplacements.com"
+      ],
+      "extra_snippets": true,
+      "strict_detail_filter": true,
+      "generic_detail_min_score": 4,
+      "max_explicit_age_days": 45,
+      "min_description_chars": 120,
+      "require_location": false,
+      "custom_detail_url_patterns": [],
+      "custom_listing_url_patterns": [],
+      "detail_query_hint": "",
+      "search_pages_per_query": 1,
+      "listing_query_exclusions": "",
+      "max_search_requests_per_run": 12,
+      "max_hydration_attempts": 60,
+      "expand_role_or_queries": false,
+      "include_grouped_queries": false,
+      "prehydrate_min_score": 2,
+      "require_target_role_match": true,
+      "role_match_min_ratio": 0.66,
+      "allow_global_remote": false,
+      "reject_company_pages": true,
+      "min_generic_description_chars": 180,
+      "max_structured_jobs_per_page": 10,
+      "cache_enabled": true,
+      "cache_dir": "data/cache/brave",
+      "cache_ttl_hours": 24,
+      "cache_only": false,
+      "force_refresh_cache": false,
+      "ui_lang": "",
+      "location_country": "ID",
+      "location_timezone": "Asia/Jakarta",
+      "role_aliases": {
+        "Management Trainee": [
+          "Officer Development Program",
+          "ODP",
+          "Management Development Program",
+          "MDP",
+          "Graduate Development Program"
+        ],
+        "Team Leader Sales": [
+          "Sales Team Leader"
+        ],
+        "Sales Operations": [
+          "Sales Operation"
+        ],
+        "Business Development": [
+          "Business Development Representative",
+          "BDR"
+        ]
+      },
+      "diagnostics_path": "data/output/latest_discovery_diagnostics.json",
+      "source_scoped_queries": true,
+      "selected_source_groups": [
+        "kitalulus",
+        "jobstreet",
+        "linkedin",
+        "kalibrr",
+        "glints",
+        "career_sites"
+      ],
+      "query_suffix": "(lowongan OR jobs OR karir) -course -training",
+      "source_query_strategy": "balanced_role_families",
+      "source_role_families": [
+        [
+          "Sales Supervisor",
+          "Marketing Supervisor",
+          "Branch Manager",
+          "Sales Coordinator",
+          "Area Sales Supervisor"
+        ],
+        [
+          "Account Officer",
+          "Credit Marketing Officer",
+          "Relationship Officer",
+          "Account Executive",
+          "Business Development Executive"
+        ]
+      ],
+      "brave_parameter_mode": "country_only"
+    },
+    {
+      "type": "url_list",
+      "name": "Direct Job URLs",
+      "enabled": false,
+      "path": "data/input/job_urls.txt",
+      "strict_jobposting": false
+    },
+    {
+      "type": "rss",
+      "name": "Public Job Feeds",
+      "enabled": false,
+      "feeds": [],
+      "hydrate_pages": true
+    },
+    {
+      "type": "csv",
+      "name": "CSV Job Collector",
+      "enabled": true,
+      "path": "data/input/Job_List.csv",
+      "fallback_only": true
+    }
+  ]
+}

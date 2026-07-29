@@ -1,0 +1,12 @@
+{
+  "queries_per_run": 16,
+  "results_per_query": 20,
+  "search_pages_per_query": 2,
+  "max_search_requests_per_run": 24,
+  "max_hydration_attempts": 80,
+  "expand_role_or_queries": true,
+  "include_grouped_queries": false,
+  "prehydrate_min_score": 2,
+  "detail_query_hint": "",
+  "listing_query_exclusions": ""
+}

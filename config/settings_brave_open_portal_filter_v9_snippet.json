@@ -1,0 +1,10 @@
+{
+  "strict_detail_filter": true,
+  "generic_detail_min_score": 4,
+  "max_explicit_age_days": 45,
+  "min_description_chars": 100,
+  "require_location": false,
+  "detail_query_hint": "(\"tanggung jawab\" OR kualifikasi OR \"job description\" OR \"apply now\" OR \"lamar sekarang\")",
+  "custom_detail_url_patterns": [],
+  "custom_listing_url_patterns": []
+}

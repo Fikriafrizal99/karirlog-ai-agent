@@ -1,0 +1,7 @@
+{
+  "portal_assistant": {
+    "navigation_retry_count": 3,
+    "navigation_retry_delay_seconds": 0.75,
+    "close_completed_queue_tabs": true
+  }
+}

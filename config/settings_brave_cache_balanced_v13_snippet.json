@@ -1,0 +1,13 @@
+{
+  "require_target_role_match": true,
+  "role_match_min_ratio": 0.66,
+  "allow_global_remote": false,
+  "reject_company_pages": true,
+  "min_description_chars": 120,
+  "min_generic_description_chars": 140,
+  "max_structured_jobs_per_page": 10,
+  "max_explicit_age_days": 45,
+  "cache_enabled": true,
+  "cache_dir": "data/cache/brave",
+  "cache_ttl_hours": 24
+}

@@ -1,0 +1,156 @@
+﻿# =========================================================
+# KARIRLOG — PRIVATE DATA & CREDENTIALS
+# =========================================================
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# API, Gmail, OAuth, dan credential
+credentials.json
+credentials*.json
+client_secret*.json
+token.json
+token*.json
+gmail_token.json
+data/secrets/
+secrets/
+*.pem
+*.key
+
+# Profil pribadi
+config/*profile*.json
+config/*personal*.json
+config/*local*.json
+config/*secret*.json
+
+# =========================================================
+# DOKUMEN PRIBADI
+# =========================================================
+
+# CV, portfolio, sertifikat, ijazah, dan attachment
+documents/
+attachments/
+application_documents/
+
+# =========================================================
+# DATABASE & DATA RUNTIME
+# =========================================================
+
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+data/karirlog.db
+data/browser_profile/
+data/output/
+data/runtime/
+data/state/
+data/cache/
+data/downloads/
+data/screenshots/
+data/applications/
+data/packages/
+
+# Tetap izinkan placeholder folder
+!data/output/.gitkeep
+!data/runtime/.gitkeep
+!data/state/.gitkeep
+
+# =========================================================
+# LOG & TEMPORARY FILES
+# =========================================================
+
+logs/
+*.log
+tmp/
+temp/
+work/
+*.tmp
+*.bak
+*.old
+*.orig
+
+# Arsip backup
+*.zip
+*.rar
+*.7z
+
+# =========================================================
+# PYTHON
+# =========================================================
+
+.venv/
+venv/
+env/
+ENV/
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+build/
+dist/
+*.egg-info/
+
+# =========================================================
+# PLAYWRIGHT / BROWSER
+# =========================================================
+
+playwright-report/
+test-results/
+.browser/
+.ms-playwright/
+
+# =========================================================
+# EDITOR & WINDOWS
+# =========================================================
+
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# PowerShell history
+ConsoleHost_history.txt
+
+# Browser profile eksternal — cookies, session, login
+data/browser_profile_external/
+
+# Input pribadi dan daftar lowongan
+data/input/*
+!data/input/jobs_sample.csv
+!data/input/.gitkeep
+
+# Backup konfigurasi lama
+data/upgrade_backup/
+
+# Backup dan installer maintenance lama
+launcher/maintenance/backups/
+launcher/maintenance/legacy_root/
+launcher/maintenance/legacy_installers/
+launcher/maintenance/installed_patch/
+
+# Backup runtime dan snapshot pribadi
+data/backup/
+data/backups/
+
+# Profil pengguna asli
+config/profil.json
+
+# Backup runtime dan snapshot pribadi
+data/backup/
+data/backups/
+
+# Profil pengguna asli
+config/profil.json

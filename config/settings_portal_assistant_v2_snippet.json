@@ -1,0 +1,13 @@
+{
+  "portal_assistant": {
+    "enabled": true,
+    "headless": false,
+    "user_data_dir": "data/browser_profile",
+    "artifact_dir": "data/output/portal_sessions",
+    "timeout_ms": 45000,
+    "submit_mode": "manual_only",
+    "browser_channel": "auto",
+    "show_helper_panel": true,
+    "slow_mo_ms": 0
+  }
+}

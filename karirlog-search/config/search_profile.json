@@ -1,0 +1,72 @@
+{
+  "target_roles": [
+    "Sales Supervisor",
+    "Marketing Supervisor",
+    "Branch Marketing Head",
+    "Branch Manager",
+    "Area Sales Supervisor",
+    "Territory Sales Supervisor",
+    "Sales Coordinator",
+    "Sales Operations",
+    "Business Development Executive",
+    "Business Development",
+    "Account Executive",
+    "Account Manager",
+    "Relationship Officer",
+    "Relationship Manager",
+    "Account Officer",
+    "Credit Marketing Officer",
+    "Dealer Relationship Officer",
+    "Customer Success",
+    "Operations Supervisor",
+    "Operations Coordinator",
+    "Project Coordinator",
+    "Management Trainee",
+    "Team Leader Sales"
+  ],
+  "preferred_locations": [
+    "Cianjur",
+    "Sukabumi",
+    "Bogor",
+    "Bandung",
+    "Bekasi",
+    "Depok",
+    "Jakarta",
+    "Tangerang",
+    "Tangerang Selatan",
+    "Jabodetabek",
+    "Jawa Barat",
+    "Banten",
+    "Remote",
+    "Hybrid",
+    "Indonesia"
+  ],
+  "role_families": [
+    [
+      "Sales Supervisor",
+      "Marketing Supervisor",
+      "Branch Manager",
+      "Sales Coordinator",
+      "Area Sales Supervisor"
+    ],
+    [
+      "Account Officer",
+      "Credit Marketing Officer",
+      "Relationship Officer",
+      "Account Executive",
+      "Business Development Executive"
+    ]
+  ],
+  "excluded_search_keywords": [
+    "Commission Only",
+    "Unpaid Internship",
+    "Volunteer Only",
+    "Agen Tanpa Gaji",
+    "Wajib Investasi",
+    "Wajib Deposit",
+    "Wajib Membeli Produk",
+    "course",
+    "training",
+    "bootcamp"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "sources_config": "config/sources.json",
+  "input_csv": "data/input/Job_List.csv",
+  "sample_input_csv": "data/input/jobs_sample.csv",
+  "output_dir": "data/output",
+  "discovery_mode": "live_with_fallback",
+  "max_jobs_per_run": 100
+}

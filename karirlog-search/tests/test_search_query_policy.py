@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from collections import Counter
 from pathlib import Path
 
 from karirlog_search.discovery.brave_query_policy import BraveSearchJobSource
@@ -41,6 +42,38 @@ def test_source_scoped_query_plan_covers_every_configured_target_role() -> None:
         assert f'"{role}"' in combined, role
 
 
+def test_focus_configuration_matches_target_roles_without_overlap() -> None:
+    _, profile, _ = _source()
+    focuses = profile["search_focuses"]
+
+    configured_roles = [
+        role
+        for focus in focuses
+        for role in focus["roles"]
+    ]
+    assert len(configured_roles) == len(set(configured_roles))
+    assert set(configured_roles) == set(profile["target_roles"])
+    assert [focus["id"] for focus in focuses] == [
+        "CORE_EXPERIENCE",
+        "GENERAL_TRANSFERABLE",
+    ]
+    assert abs(sum(float(focus["weight"]) for focus in focuses) - 1.0) < 1e-9
+    assert all("sap" not in role.casefold() for role in configured_roles)
+
+
+def test_query_budget_is_split_55_45_between_two_focuses() -> None:
+    source, _, brave = _source()
+    queries = source._queries()
+
+    assert len(queries) == int(brave["queries_per_run"]) == 12
+    counts = Counter(
+        str(item.get("focus"))
+        for item in source.executed_query_plan
+    )
+    assert counts["CORE_EXPERIENCE"] == 7
+    assert counts["GENERAL_TRANSFERABLE"] == 5
+
+
 def test_configured_preferred_locations_are_actually_used() -> None:
     source, profile, _ = _source()
     queries = source._queries()
@@ -63,7 +96,9 @@ def test_generated_queries_respect_brave_limits_and_have_source_mapping() -> Non
     assert len(source.executed_query_plan) == len(queries)
     assert len(source.query_source_groups) == len(queries)
 
-    for query in queries:
+    for item, query in zip(source.executed_query_plan, queries):
+        assert item["focus"] in {"CORE_EXPERIENCE", "GENERAL_TRANSFERABLE"}
+        assert item["focus_label"]
         assert len(query) <= 400
         assert len(query.split()) <= 50
         assert query.casefold() in source.query_source_groups

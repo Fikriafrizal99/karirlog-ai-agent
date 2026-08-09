@@ -35,6 +35,7 @@ except ImportError:
 from karirlog_search.app import run_collect
 from karirlog_search.config import load_json
 from karirlog_search.logging_setup import setup_logging
+from karirlog_search.notifications import send_search_report
 from karirlog_search.paths import resolve_path, resolve_settings, resolve_sources_config
 
 
@@ -72,6 +73,11 @@ def command_collect(args: argparse.Namespace) -> int:
     print(f"CSV arsip       : {stats['csv_timestamped']}")
     if stats["diagnostics_path"]:
         print(f"Diagnostics     : {stats['diagnostics_path']}")
+
+    telegram_ok, telegram_status = send_search_report(settings, stats)
+    print(
+        f"Telegram        : {'OK' if telegram_ok else 'INFO'} | {telegram_status}"
+    )
 
     execution_input = (
         _ROOT.parent / "karirlog-execution" / "data" / "input" / "discovery_latest.csv"

@@ -1,11 +1,11 @@
 {
   "target_roles": [
+    "Sales Executive",
+    "Sales Officer",
     "Sales Supervisor",
+    "Marketing Executive",
     "Marketing Supervisor",
     "Branch Marketing Head",
-    "Branch Manager",
-    "Area Sales Supervisor",
-    "Territory Sales Supervisor",
     "Sales Coordinator",
     "Sales Operations",
     "Business Development Executive",
@@ -14,15 +14,16 @@
     "Account Manager",
     "Relationship Officer",
     "Relationship Manager",
-    "Account Officer",
-    "Credit Marketing Officer",
-    "Dealer Relationship Officer",
     "Customer Success",
-    "Operations Supervisor",
+    "Partnership Executive",
+    "Partnership Specialist",
+    "Commercial Executive",
     "Operations Coordinator",
     "Project Coordinator",
-    "Management Trainee",
-    "Team Leader Sales"
+    "Team Leader Sales",
+    "Area Sales Supervisor",
+    "Territory Sales Supervisor",
+    "Dealer Relationship Officer"
   ],
   "preferred_locations": [
     "Cianjur",
@@ -43,18 +44,34 @@
   ],
   "role_families": [
     [
+      "Sales Executive",
+      "Sales Officer",
       "Sales Supervisor",
+      "Marketing Executive",
       "Marketing Supervisor",
-      "Branch Manager",
+      "Branch Marketing Head",
       "Sales Coordinator",
-      "Area Sales Supervisor"
+      "Sales Operations",
+      "Team Leader Sales",
+      "Area Sales Supervisor",
+      "Territory Sales Supervisor"
     ],
     [
-      "Account Officer",
-      "Credit Marketing Officer",
-      "Relationship Officer",
+      "Business Development Executive",
+      "Business Development",
       "Account Executive",
-      "Business Development Executive"
+      "Account Manager",
+      "Relationship Officer",
+      "Relationship Manager",
+      "Customer Success",
+      "Partnership Executive",
+      "Partnership Specialist",
+      "Commercial Executive",
+      "Dealer Relationship Officer"
+    ],
+    [
+      "Operations Coordinator",
+      "Project Coordinator"
     ]
   ],
   "excluded_search_keywords": [

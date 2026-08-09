@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "focuses": [
+    {
+      "id": "CORE_EXPERIENCE",
+      "label": "Core Experience",
+      "weight": 0.55,
+      "roles": [
+        "Branch Marketing Head",
+        "Sales Supervisor",
+        "Marketing Supervisor",
+        "Area Sales Supervisor",
+        "Territory Sales Supervisor",
+        "Team Leader Sales",
+        "Sales Coordinator",
+        "Sales Operations",
+        "Relationship Officer",
+        "Relationship Manager",
+        "Dealer Relationship Officer"
+      ],
+      "runtime_role_aliases": [
+        "Sales Team Leader",
+        "Marketing Head",
+        "Branch Sales Supervisor",
+        "Dealer Relationship"
+      ]
+    },
+    {
+      "id": "GENERAL_TRANSFERABLE",
+      "label": "General Transferable",
+      "weight": 0.45,
+      "roles": [
+        "Operations Coordinator",
+        "Operations Executive",
+        "Business Operations",
+        "Project Coordinator",
+        "Project Administrator",
+        "Project Support",
+        "Program Coordinator",
+        "Business Development",
+        "Partnership Executive",
+        "Partnership Specialist",
+        "Commercial Executive",
+        "Commercial Operations",
+        "Customer Success",
+        "Customer Experience",
+        "Client Relations",
+        "Client Service",
+        "Partner Operations",
+        "Process Improvement",
+        "Business Support",
+        "Service Operations"
+      ],
+      "runtime_role_aliases": [
+        "Operations Officer",
+        "Operations Specialist",
+        "Operational Coordinator",
+        "Project Officer",
+        "PMO Support",
+        "Customer Service",
+        "Customer Support",
+        "Client Success",
+        "Business Support Officer",
+        "Operational Excellence",
+        "Continuous Improvement"
+      ],
+      "transferable_skills": [
+        "Leadership",
+        "Team Management",
+        "Communication",
+        "Stakeholder Management",
+        "Customer Handling",
+        "Operational Coordination",
+        "Project Coordination",
+        "Reporting",
+        "Data Analysis",
+        "Negotiation",
+        "Problem Solving",
+        "Administration",
+        "Process Improvement",
+        "Customer Service",
+        "Adaptability",
+        "Fast Learning"
+      ]
+    }
+  ]
+}

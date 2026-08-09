@@ -15,9 +15,9 @@ if not exist "%INPUT%" (
   echo Review hasil Search di Excel, lalu simpan/copy sebagai:
   echo   %INPUT%
   echo.
-  echo Execution sengaja tidak membaca langsung dari folder karirlog-search.
+  echo Execution sengaja tidak membaca langsung dari folder Search.
   exit /b 2
 )
 echo Input manual: %INPUT%
-"%PYTHON%" "%ROOT%\main.py" execute --input "%INPUT%" %*
+"%PYTHON%" "%ROOT%\apply_assistant.py" --input "%INPUT%" %*
 exit /b %ERRORLEVEL%

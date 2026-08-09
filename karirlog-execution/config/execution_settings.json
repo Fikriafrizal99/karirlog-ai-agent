@@ -8,6 +8,13 @@
     "APPLY"
   ],
   "auto_apply_mode": "guarded_delivery",
+  "execution_focus_config": "config/execution_focuses.json",
+  "apply_assistant": {
+    "auto_create_gmail_drafts": true,
+    "auto_assist_portal_queue": true,
+    "gmail_limit": 10,
+    "portal_limit": 50
+  },
   "telegram_enabled": true,
   "telegram_bot_token_env": "TELEGRAM_BOT_TOKEN",
   "telegram_chat_id_env": "TELEGRAM_CHAT_ID",

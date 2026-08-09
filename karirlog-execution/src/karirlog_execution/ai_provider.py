@@ -75,7 +75,13 @@ class OpenAIJobAnalyzer:
             settings.get("openai_responses_url", "https://api.openai.com/v1/responses")
         ).strip()
         self.timeout = int(settings.get("ai_timeout_seconds", 45))
-        self.max_output_tokens = int(settings.get("ai_max_output_tokens", 2200))
+        self.max_output_tokens = max(400, int(settings.get("ai_max_output_tokens", 1800)))
+        self.max_description_chars = max(
+            1000, int(settings.get("ai_max_description_chars", 8000))
+        )
+        self.reasoning_effort = str(
+            settings.get("ai_reasoning_effort", "minimal")
+        ).strip().lower()
         self.strategy = str(settings.get("analysis_strategy", "balanced")).strip()
         self.session = session or requests.Session()
 
@@ -87,7 +93,7 @@ class OpenAIJobAnalyzer:
         if not self.ready:
             raise AIAnalysisError(f"API key belum tersedia pada environment {self.api_key_env}")
 
-        payload = {
+        payload: dict[str, Any] = {
             "model": self.model,
             "store": False,
             "max_output_tokens": self.max_output_tokens,
@@ -132,7 +138,7 @@ class OpenAIJobAnalyzer:
                                         "title": job.title,
                                         "company": job.company,
                                         "location": job.location,
-                                        "description": job.description,
+                                        "description": job.description[: self.max_description_chars],
                                         "employment_type": job.employment_type,
                                         "salary": job.salary,
                                         "remote": job.remote,
@@ -155,6 +161,14 @@ class OpenAIJobAnalyzer:
                 }
             },
         }
+
+        if self.model.startswith("gpt-5") and self.reasoning_effort in {
+            "minimal",
+            "low",
+            "medium",
+            "high",
+        }:
+            payload["reasoning"] = {"effort": self.reasoning_effort}
 
         try:
             response = self.session.post(

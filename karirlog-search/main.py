@@ -7,7 +7,7 @@ Usage:
 Outputs (into data/output/):
     discovery_latest.csv
     discovery_YYYYMMDD_HHMMSS.csv
-    latest_discovery_diagnostics.json   (written by the Brave source)
+    latest_discovery_diagnostics.json
 """
 
 from __future__ import annotations
@@ -17,12 +17,10 @@ import os
 import sys
 from pathlib import Path
 
-# Make src/ and the sibling contracts package importable without packaging.
 _ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(_ROOT / "src"))
 sys.path.insert(0, str(_ROOT.parent / "karirlog-contracts" / "src"))
 
-# Windows consoles default to cp1252; summaries may contain non-latin chars.
 for _stream in (sys.stdout, sys.stderr):
     try:
         _stream.reconfigure(encoding="utf-8")
@@ -31,7 +29,7 @@ for _stream in (sys.stdout, sys.stderr):
 
 try:
     from dotenv import load_dotenv
-except ImportError:  # dotenv is optional for the search engine
+except ImportError:
     load_dotenv = None
 
 from karirlog_search.app import run_collect
@@ -56,10 +54,11 @@ def command_collect(args: argparse.Namespace) -> int:
     logger = setup_logging(settings.get("output_dir", "data/output"))
     try:
         stats = run_collect(profile, settings, sources)
-    except Exception as exc:  # surface a clear error, non-zero exit
+    except Exception as exc:
         logger.error("Discovery gagal: %s", exc, exc_info=True)
         print(f"ERROR: discovery gagal: {exc}")
         return 2
+
     print("\nKARIRLOG SEARCH ENGINE — SELESAI")
     print(f"Mode            : {settings.get('discovery_mode')}")
     print(f"Data mentah     : {stats['raw_found']}")
@@ -68,10 +67,21 @@ def command_collect(args: argparse.Namespace) -> int:
     print(f"Fallback dipakai: {'Ya' if stats['fallback_used'] else 'Tidak'}")
     for item in stats["collectors"]:
         print(f"- {item['status']:8} | {item['found']:3} | {item['name']} | {item['message']}")
+
     print(f"\nCSV terbaru     : {stats['csv_latest']}")
     print(f"CSV arsip       : {stats['csv_timestamped']}")
     if stats["diagnostics_path"]:
         print(f"Diagnostics     : {stats['diagnostics_path']}")
+
+    execution_input = (
+        _ROOT.parent / "karirlog-execution" / "data" / "input" / "discovery_latest.csv"
+    )
+    print("\nHANDOFF MANUAL")
+    print("1. Buka discovery_latest.csv di Excel.")
+    print("2. Review/hapus lowongan yang tidak ingin diteruskan.")
+    print(f"3. Simpan/copy hasil review ke: {execution_input}")
+    print("4. Baru jalankan KARIRLOG_EXECUTION.bat.")
+    print("Search tidak menyalin CSV ke Execution secara otomatis.")
     return 0
 
 
@@ -105,7 +115,6 @@ def command_check_sources(args: argparse.Namespace) -> int:
 
 
 def command_show_plan(args: argparse.Namespace) -> int:
-    """Print the configured discovery plan without making network requests."""
     profile, settings, sources = _load(args.settings, args.profile, None)
     print(f"Project root : {_ROOT}")
     print(f"Mode         : {settings.get('discovery_mode', 'live_with_fallback')}")
@@ -149,6 +158,7 @@ def main() -> int:
         os.environ["KARIRLOG_BRAVE_REFRESH_SEARCH"] = "1"
     if os.getenv("FORCE_REFRESH", "").strip() == "1":
         os.environ["KARIRLOG_BRAVE_FORCE_REFRESH"] = "1"
+
     args = make_parser().parse_args()
     if args.command == "collect":
         return command_collect(args)

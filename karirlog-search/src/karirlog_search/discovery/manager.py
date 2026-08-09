@@ -6,7 +6,7 @@ from typing import Any
 
 from karirlog_contracts.job import Job
 from .results import CollectorReport, DiscoveryResult
-from .brave_source import BraveSearchJobSource
+from .brave_query_policy import BraveSearchJobSource
 from .csv_source import CsvJobSource
 from .http_client import HttpClient
 from ..paths import project_root, resolve_path, resolve_sources_config

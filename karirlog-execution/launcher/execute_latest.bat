@@ -8,11 +8,16 @@ if not exist "%PYTHON%" (
   exit /b 2
 )
 cd /d "%ROOT%"
-set "INPUT=%ROOT%\..\karirlog-search\data\output\discovery_latest.csv"
-if not exist "%INPUT%" set "INPUT=%ROOT%\data\input\discovery_latest.csv"
+set "INPUT=%ROOT%\data\input\discovery_latest.csv"
 if not exist "%INPUT%" (
-  echo ERROR: CSV handoff tidak ditemukan. Jalankan Search atau siapkan data\input\discovery_latest.csv.
+  echo ERROR: CSV handoff manual tidak ditemukan.
+  echo.
+  echo Review hasil Search di Excel, lalu simpan/copy sebagai:
+  echo   %INPUT%
+  echo.
+  echo Execution sengaja tidak membaca langsung dari folder karirlog-search.
   exit /b 2
 )
+echo Input manual: %INPUT%
 "%PYTHON%" "%ROOT%\main.py" execute --input "%INPUT%" %*
 exit /b %ERRORLEVEL%

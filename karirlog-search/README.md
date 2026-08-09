@@ -1,8 +1,19 @@
 # karirlog-search
 
-Independent discovery engine. It owns Brave Search, RSS, URL, and CSV
-collectors and writes only the shared 15-column CSV handoff; it does not import
-Execution modules.
+KarirLog Search adalah engine discovery yang berdiri sendiri.
+
+Tujuannya sederhana:
+
+```text
+Brave Search
+  -> validasi dasar
+  -> deduplikasi
+  -> discovery_latest.csv
+  -> review manual di Excel
+```
+
+Search tidak mengimpor AI analysis, CV, database, Gmail, portal assistant, atau
+modul Execution.
 
 ## Setup
 
@@ -12,23 +23,64 @@ py -m venv .venv
 python -m pip install -r requirements.txt
 ```
 
-`requirements.txt` installs the sibling contracts package editable. Copy
-`.env.example` to `.env` and set `BRAVE_SEARCH_API_KEY` for live mode. Search
-still works without that key through CSV fallback.
+Salin `.env.example` menjadi `.env`, lalu isi `BRAVE_SEARCH_API_KEY` untuk live
+search. Jika key tidak tersedia, mode `live_with_fallback` dapat memakai CSV
+fallback.
 
-## Commands
+## Menjalankan Search
 
-```powershell
-python main.py collect --mode sample
-python main.py collect
-python main.py collect --mode live
-python main.py check-sources
+Paling sederhana:
+
+```text
+KARIRLOG_SEARCH.bat
 ```
 
-`sample` reads `data/input/jobs_sample.csv`; live fallback reads
-`data/input/Job_List.csv` when Brave is unavailable. Relative config paths are
-resolved from this project root, so commands work from another folder. Outputs
-are `data/output/discovery_latest.csv`, timestamped CSV, and diagnostics.
+Atau:
 
-Run tests with `pytest tests -q`. Use the Windows launchers under `launcher/`;
-they select the project `.venv` and never depend on current working directory.
+```powershell
+python main.py collect
+python main.py check-sources
+python main.py show-plan
+```
+
+Output utama:
+
+```text
+data/output/discovery_latest.csv
+```
+
+Search juga menyimpan arsip timestamped dan diagnostics.
+
+## Coverage pencarian
+
+Query planner memakai seluruh `target_roles` pada `config/search_profile.json`.
+Role dibagi ke beberapa query dan diputar ke sumber yang dipilih agar semua
+target role mendapat coverage tanpa membuat kombinasi role x source yang
+berlebihan.
+
+`preferred_locations` juga dimasukkan langsung ke query. Nilai `Indonesia`
+dipakai sebagai konteks negara, bukan sebagai alternatif lokasi di dalam OR
+clause, sehingga kota/area pilihan tidak kehilangan prioritas.
+
+## Handoff ke Execution
+
+Handoff sengaja manual:
+
+1. Jalankan Search.
+2. Buka `data/output/discovery_latest.csv` di Excel.
+3. Review dan hapus baris yang tidak ingin diteruskan.
+4. Simpan/copy file hasil review ke:
+
+```text
+../karirlog-execution/data/input/discovery_latest.csv
+```
+
+5. Jalankan `KARIRLOG_EXECUTION.bat`.
+
+Search tidak menyalin CSV ke Execution otomatis.
+
+## Testing
+
+```powershell
+pytest tests -q
+```

@@ -4,5 +4,10 @@
   "sample_input_csv": "data/input/jobs_sample.csv",
   "output_dir": "data/output",
   "discovery_mode": "live_with_fallback",
-  "max_jobs_per_run": 100
+  "max_jobs_per_run": 100,
+  "telegram_enabled": true,
+  "telegram_send_csv": true,
+  "telegram_bot_token_env": "TELEGRAM_BOT_TOKEN",
+  "telegram_chat_id_env": "TELEGRAM_CHAT_ID",
+  "telegram_timeout_seconds": 20
 }

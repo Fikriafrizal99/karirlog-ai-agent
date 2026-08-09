@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from apply_assistant import build_active_profile
+from karirlog_execution.notifications import build_summary
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -52,3 +53,34 @@ def test_apply_assistant_defaults_to_guarded_one_command_delivery() -> None:
     assert "data\\input\\discovery_latest.csv" in launcher
     assert "apply_assistant.py" in launcher
     assert "karirlog-search" not in launcher
+
+
+def test_execution_uses_high_recall_ai_with_rule_fallback() -> None:
+    settings = _load_json(PROJECT_ROOT / "config" / "execution_settings.json")
+
+    assert settings["analysis_mode"] == "ai_with_fallback"
+    assert settings["analysis_strategy"] == "high_recall_guarded"
+    assert settings["apply_threshold"] == 60
+    assert settings["review_threshold"] == 40
+    assert settings["build_application_for"] == ["APPLY"]
+
+    provider_source = (
+        PROJECT_ROOT / "src" / "karirlog_execution" / "ai_provider.py"
+    ).read_text(encoding="utf-8").lower()
+    assert "opportunity-oriented" in provider_source
+    assert "jangan menuntut kecocokan judul jabatan yang sama persis" in provider_source
+    assert "gunakan skip hanya untuk mismatch berat" in provider_source
+
+
+def test_telegram_summary_shows_apply_rate() -> None:
+    message = build_summary(
+        {
+            "analysis_mode": "ai_with_fallback",
+            "apply_count": 6,
+            "review_count": 3,
+            "skip_count": 1,
+        }
+    )
+
+    assert "Apply rate" in message
+    assert "60%" in message

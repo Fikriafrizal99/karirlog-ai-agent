@@ -19,6 +19,11 @@ def build_summary(stats: dict[str, Any]) -> str:
         1 for item in stats.get("collectors", []) if item.get("status") == "SKIPPED"
     )
     fallback = "Ya" if stats.get("fallback_used") else "Tidak"
+    apply_count = int(stats.get("apply_count", 0) or 0)
+    review_count = int(stats.get("review_count", 0) or 0)
+    skip_count = int(stats.get("skip_count", 0) or 0)
+    decided = apply_count + review_count + skip_count
+    apply_rate = round((apply_count / decided) * 100) if decided else 0
     return (
         "🤖 KARIRLOG AI AGENT V1.0\n"
         "━━━━━━━━━━━━━━━━━━━━\n"
@@ -37,9 +42,10 @@ def build_summary(stats: dict[str, Any]) -> str:
         f"📐 Rule            : {stats.get('rule_analyzed', 0)}\n"
         f"↩️ AI fallback     : {stats.get('ai_fallbacks', 0)}\n"
         f"⚠️ Analysis error  : {stats.get('analysis_failures', 0)}\n"
-        f"✅ APPLY           : {stats.get('apply_count', 0)}\n"
-        f"🟡 REVIEW          : {stats.get('review_count', 0)}\n"
-        f"⛔ SKIP            : {stats.get('skip_count', 0)}\n"
+        f"✅ APPLY           : {apply_count}\n"
+        f"🟡 REVIEW          : {review_count}\n"
+        f"⛔ SKIP            : {skip_count}\n"
+        f"🎯 Apply rate      : {apply_rate}%\n"
         "━━━━━━━━━━━━━━━━━━━━\n"
         f"📦 Draft siap      : {stats.get('application_ready', 0)}\n"
         f"✉️ Email ready     : {stats.get('email_ready', 0)}\n"

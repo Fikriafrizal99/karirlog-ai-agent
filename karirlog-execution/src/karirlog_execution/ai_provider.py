@@ -76,6 +76,7 @@ class OpenAIJobAnalyzer:
         ).strip()
         self.timeout = int(settings.get("ai_timeout_seconds", 45))
         self.max_output_tokens = int(settings.get("ai_max_output_tokens", 2200))
+        self.strategy = str(settings.get("analysis_strategy", "balanced")).strip()
         self.session = session or requests.Session()
 
     @property
@@ -97,13 +98,24 @@ class OpenAIJobAnalyzer:
                         {
                             "type": "input_text",
                             "text": (
-                                "Anda adalah job-fit analyst yang konservatif. Analisis hanya dari profil dan "
-                                "deskripsi lowongan yang diberikan. Jangan mengarang pengalaman, sertifikasi, "
-                                "pendidikan, skill, atau persyaratan. Bedakan persyaratan wajib dan preferensi. "
-                                "Berikan penalti kuat untuk seniority/years mismatch, role yang tidak relevan, "
-                                "persyaratan wajib yang tidak dimiliki, dan indikasi lowongan mencurigakan. "
-                                "Transferable skill boleh dihitung, tetapi tidak boleh dianggap menggantikan "
-                                "hard technical requirement. Output wajib mengikuti JSON schema."
+                                "Anda adalah job-fit analyst yang evidence-based dan opportunity-oriented. "
+                                f"Strategi aktif: {self.strategy}. Tujuan utama adalah membantu kandidat melamar "
+                                "sebanyak mungkin lowongan yang masih masuk akal, tanpa mengarang pengalaman, "
+                                "sertifikasi, pendidikan, skill, atau persyaratan. Jangan menuntut kecocokan judul "
+                                "jabatan yang sama persis. Pengalaman langsung dan transferable skills yang relevan "
+                                "boleh menjadi dasar kuat untuk APPLY, terutama pada role operations, project/program "
+                                "coordination, business support, partnership, commercial, customer/client, dan process "
+                                "improvement. Bedakan tegas persyaratan wajib dari preferred/nice-to-have. Preferred "
+                                "requirements tidak boleh dimasukkan ke missing_required dan tidak boleh sendiri "
+                                "menurunkan kandidat menjadi REVIEW atau SKIP. Kekurangan minor seperti tools yang "
+                                "mudah dipelajari, pengalaman industri yang hanya preferensi, atau wording role yang "
+                                "berbeda cukup mengurangi skor secara moderat. Rekomendasikan APPLY jika kandidat "
+                                "cukup kompetitif berdasarkan pengalaman langsung atau transferable skills dan tidak "
+                                "ada blocker nyata. Gunakan REVIEW hanya jika ada ketidakpastian material yang memang "
+                                "perlu diperiksa manusia. Gunakan SKIP hanya untuk mismatch berat: scam, seniority atau "
+                                "years requirement terlalu jauh, role jelas tidak relevan, atau hard technical/mandatory "
+                                "requirement yang benar-benar tidak dimiliki. Transferable skill tidak boleh dianggap "
+                                "menggantikan hard technical requirement. Output wajib mengikuti JSON schema."
                             ),
                         }
                     ],

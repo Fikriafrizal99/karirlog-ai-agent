@@ -2,8 +2,9 @@
   "database_path": "data/database/karirlog.db",
   "input_csv": "data/input/discovery_latest.csv",
   "output_dir": "data/output",
-  "apply_threshold": 65,
-  "review_threshold": 45,
+  "apply_threshold": 60,
+  "review_threshold": 40,
+  "analysis_strategy": "high_recall_guarded",
   "build_application_for": [
     "APPLY"
   ],
@@ -18,7 +19,7 @@
   "telegram_enabled": true,
   "telegram_bot_token_env": "TELEGRAM_BOT_TOKEN",
   "telegram_chat_id_env": "TELEGRAM_CHAT_ID",
-  "analysis_mode": "rule_only",
+  "analysis_mode": "ai_with_fallback",
   "ai_provider": "openai",
   "ai_model": "gpt-5-mini",
   "openai_api_key_env": "OPENAI_API_KEY",

@@ -34,6 +34,8 @@ except ImportError:
 
 from karirlog_search.app import run_collect
 from karirlog_search.config import load_json
+from karirlog_search.discovery.brave_query_policy import BraveSearchJobSource
+from karirlog_search.discovery.http_client import HttpClient
 from karirlog_search.logging_setup import setup_logging
 from karirlog_search.notifications import send_search_report
 from karirlog_search.paths import resolve_path, resolve_settings, resolve_sources_config
@@ -130,12 +132,51 @@ def command_show_plan(args: argparse.Namespace) -> int:
     print("Target roles : " + (", ".join(map(str, roles)) if isinstance(roles, list) else "-"))
     print("Locations    : " + (", ".join(map(str, locations)) if isinstance(locations, list) else "-"))
     print("Sources:")
+
+    brave_config: dict | None = None
     for source in sources.get("sources", []):
         if isinstance(source, dict):
             print(
                 f"- {'ON' if source.get('enabled') else 'OFF':3} | "
                 f"{source.get('type', '-')} | {source.get('name', '-') }"
             )
+            if source.get("type") == "brave_search" and source.get("enabled"):
+                brave_config = source
+
+    if not brave_config:
+        return 0
+
+    planner = BraveSearchJobSource(
+        brave_config,
+        profile,
+        HttpClient(sources.get("http", {})),
+        max_jobs=int(settings.get("max_jobs_per_run", 100)),
+    )
+    queries = planner._queries()
+    request_cap = int(brave_config.get("max_search_requests_per_run", len(queries)) or len(queries))
+    results_per_query = int(brave_config.get("results_per_query", 20) or 20)
+
+    print("\nBRAVE QUERY PLAN — 0 NETWORK REQUEST")
+    print("=" * 72)
+    print(f"Planned queries : {len(queries)}")
+    print(f"Hard request cap: {request_cap}")
+    print(f"Raw ceiling     : sampai {len(queries) * results_per_query} hasil sebelum filter")
+    print("Lokasi          : country=ID + validasi setelah search; tidak dijejalkan ke q")
+    print()
+
+    plan = planner.executed_query_plan
+    if plan:
+        for index, item in enumerate(plan, start=1):
+            focus = str(item.get("focus", "-"))
+            scope = str(item.get("source", "-"))
+            print(f"{index:02d}. [{focus}] [{scope}]")
+            print(f"    {item.get('query', '')}")
+    else:
+        for index, query in enumerate(queries, start=1):
+            print(f"{index:02d}. {query}")
+
+    print("=" * 72)
+    print("Tidak ada request Brave yang dikirim pada menu ini.")
     return 0
 
 

@@ -32,11 +32,11 @@ def _source() -> tuple[BraveSearchJobSource, dict, dict]:
     return source, profile, brave
 
 
-def test_source_scoped_query_plan_covers_every_configured_target_role() -> None:
+def test_high_recall_query_plan_covers_every_configured_target_role() -> None:
     source, profile, brave = _source()
     queries = source._queries()
 
-    assert 1 <= len(queries) <= int(brave["queries_per_run"])
+    assert len(queries) == int(brave["queries_per_run"]) == 12
     combined = "\n".join(queries)
     for role in profile["target_roles"]:
         assert f'"{role}"' in combined, role
@@ -46,11 +46,7 @@ def test_focus_configuration_matches_target_roles_without_overlap() -> None:
     _, profile, _ = _source()
     focuses = profile["search_focuses"]
 
-    configured_roles = [
-        role
-        for focus in focuses
-        for role in focus["roles"]
-    ]
+    configured_roles = [role for focus in focuses for role in focus["roles"]]
     assert len(configured_roles) == len(set(configured_roles))
     assert set(configured_roles) == set(profile["target_roles"])
     assert [focus["id"] for focus in focuses] == [
@@ -66,39 +62,70 @@ def test_query_budget_is_split_55_45_between_two_focuses() -> None:
     queries = source._queries()
 
     assert len(queries) == int(brave["queries_per_run"]) == 12
-    counts = Counter(
-        str(item.get("focus"))
-        for item in source.executed_query_plan
-    )
+    counts = Counter(str(item.get("focus")) for item in source.executed_query_plan)
     assert counts["CORE_EXPERIENCE"] == 7
     assert counts["GENERAL_TRANSFERABLE"] == 5
 
 
-def test_configured_preferred_locations_are_actually_used() -> None:
-    source, profile, _ = _source()
+def test_location_list_is_not_embedded_in_brave_query() -> None:
+    source, profile, brave = _source()
     queries = source._queries()
     combined = "\n".join(queries)
 
+    # Country localisation is supplied by Brave parameters/X-Loc headers and
+    # preferred locations are enforced after results are returned. This avoids
+    # the old over-constrained query that returned 0 results for all 12 calls.
+    assert brave["country"] == "ID"
     for location in profile["preferred_locations"]:
-        if str(location).casefold() == "indonesia":
-            continue
-        assert f'"{location}"' in combined, location
-
-    # Country localisation may add Indonesia as an AND hint for global-looking
-    # sources, but it must not neutralise the city preferences inside the OR list.
-    assert '"Indonesia"' not in combined
+        assert f'"{location}"' not in combined
 
 
-def test_generated_queries_respect_brave_limits_and_have_source_mapping() -> None:
+def test_query_mix_prefers_selected_portals_but_keeps_broad_web_discovery() -> None:
     source, _, _ = _source()
     queries = source._queries()
 
-    assert len(source.executed_query_plan) == len(queries)
-    assert len(source.query_source_groups) == len(queries)
+    scopes = Counter(str(item.get("source")) for item in source.executed_query_plan)
+    assert scopes["Selected portals"] == 10
+    assert scopes["Broad web"] == 2
+    assert len(source.executed_query_plan) == len(queries) == 12
 
+    portal_queries = [
+        item["query"]
+        for item in source.executed_query_plan
+        if item["source"] == "Selected portals"
+    ]
+    assert portal_queries
+    assert all("site:kitalulus.com" in query for query in portal_queries)
+    assert all("site:id.jobstreet.com" in query for query in portal_queries)
+    assert all("site:linkedin.com" in query for query in portal_queries)
+    assert all("site:glints.com" in query for query in portal_queries)
+    assert all("site:kalibrr.com" in query for query in portal_queries)
+
+
+def test_generated_queries_respect_brave_limits_without_single_source_lock() -> None:
+    source, _, _ = _source()
+    queries = source._queries()
+
+    # Query results are filtered to selected sources after Brave responds, so a
+    # query is no longer mapped to exactly one source group.
+    assert source.query_source_groups == {}
     for item, query in zip(source.executed_query_plan, queries):
         assert item["focus"] in {"CORE_EXPERIENCE", "GENERAL_TRANSFERABLE"}
         assert item["focus_label"]
         assert len(query) <= 400
         assert len(query.split()) <= 50
-        assert query.casefold() in source.query_source_groups
+
+
+def test_failed_brave_attempts_are_counted_before_network_call() -> None:
+    policy_source = (
+        PROJECT_ROOT
+        / "src"
+        / "karirlog_search"
+        / "discovery"
+        / "brave_query_policy.py"
+    ).read_text(encoding="utf-8")
+
+    assert "Hard cap Brave tercapai" in policy_source
+    increment = policy_source.index("self.search_api_calls += 1")
+    network = policy_source.index("response = self.http.get", increment)
+    assert increment < network

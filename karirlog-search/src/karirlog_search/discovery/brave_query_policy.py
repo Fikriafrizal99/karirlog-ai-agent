@@ -1,21 +1,31 @@
 from __future__ import annotations
 
+import json
 import math
 import re
 from typing import Any, Iterable
 
 from .brave_source import (
-    SOURCE_GROUP_LABELS,
+    _CachedJsonResponse,
     BraveSearchJobSource as _BaseBraveSearchJobSource,
 )
 
 
-class BraveSearchJobSource(_BaseBraveSearchJobSource):
-    """Search policy for manual Search -> CSV -> Execution handoff.
+PORTAL_SEARCH_FILTER = (
+    "(site:kitalulus.com OR site:id.jobstreet.com OR site:linkedin.com "
+    "OR site:glints.com OR site:kalibrr.com OR site:kalibrr.id)"
+)
 
-    Query planning is split into configured search focuses. The Search engine
-    still writes one shared CSV; focus labels only control how Brave query
-    budget is allocated and are exposed in diagnostics.
+
+class BraveSearchJobSource(_BaseBraveSearchJobSource):
+    """High-recall Brave query policy for manual Search -> CSV handoff.
+
+    The budget is allocated by configured search focus (currently 7 Core +
+    5 General for a 12-request run). Queries search several selected portals
+    at once instead of locking every request to one portal/location. The last
+    query of each focus is intentionally broad so official career/ATS pages can
+    still be discovered. Final URL/source/role/location validation remains in
+    the base collector before a job reaches the CSV.
     """
 
     @staticmethod
@@ -31,53 +41,10 @@ class BraveSearchJobSource(_BaseBraveSearchJobSource):
             output.append(value)
         return output
 
-    def _preferred_location_terms(self) -> list[str]:
-        values = self._dedupe_text(
-            str(value)
-            for value in self.profile.get("preferred_locations", [])
-            if str(value).strip()
-        )
-        # Country localisation is already supplied through Brave's country
-        # parameter/X-Loc headers. Keeping "Indonesia" inside an OR location
-        # clause would neutralise the preferred city/area list.
-        return [value for value in values if value.casefold() != "indonesia"]
-
     @staticmethod
     def _quoted_or(values: list[str]) -> str:
         clean = [value.replace('"', "").strip() for value in values if value.strip()]
         return " OR ".join(f'"{value}"' for value in clean)
-
-    def _fit_scoped_query(
-        self,
-        roles: list[str],
-        source_filter: str,
-        group: str,
-        locations: list[str],
-    ) -> tuple[str, list[str]]:
-        active_locations = list(locations)
-        role_group = self._quoted_or(roles)
-        if not role_group:
-            return "", []
-
-        while True:
-            query = f"({role_group}) {source_filter}".strip()
-
-            if group in {"linkedin", "career_sites"}:
-                query = f"{query} Indonesia"
-
-            if active_locations:
-                query = f"{query} ({self._quoted_or(active_locations)})"
-
-            query = self._apply_detail_query_hint(query)
-            normalized = re.sub(r"\s+", " ", query).strip()
-            if self._query_within_brave_limits(normalized):
-                return normalized, active_locations
-
-            if active_locations:
-                active_locations.pop()
-                continue
-
-            return "", []
 
     def _configured_focuses(self, fallback_roles: list[str]) -> list[dict[str, Any]]:
         configured = self.profile.get("search_focuses", [])
@@ -162,9 +129,7 @@ class BraveSearchJobSource(_BaseBraveSearchJobSource):
         budgets = [max(1, math.floor(value)) for value in raw]
 
         while sum(budgets) > total_budget:
-            candidates = [
-                index for index, value in enumerate(budgets) if value > 1
-            ]
+            candidates = [index for index, value in enumerate(budgets) if value > 1]
             if not candidates:
                 break
             index = min(
@@ -187,85 +152,86 @@ class BraveSearchJobSource(_BaseBraveSearchJobSource):
 
         return budgets
 
+    @staticmethod
+    def _balanced_chunks(roles: list[str], budget: int) -> list[list[str]]:
+        if not roles or budget <= 0:
+            return []
+        chunk_count = min(len(roles), budget)
+        base, remainder = divmod(len(roles), chunk_count)
+        chunks: list[list[str]] = []
+        cursor = 0
+        for index in range(chunk_count):
+            size = base + (1 if index < remainder else 0)
+            chunks.append(roles[cursor : cursor + size])
+            cursor += size
+        return chunks
+
+    def _fit_high_recall_query(
+        self,
+        roles: list[str],
+        *,
+        portal_scoped: bool,
+    ) -> str:
+        active_roles = list(roles)
+        while active_roles:
+            role_group = self._quoted_or(active_roles)
+            query = f"({role_group})" if len(active_roles) > 1 else role_group
+            if portal_scoped:
+                query = f"{query} {PORTAL_SEARCH_FILTER}"
+            query = self._apply_detail_query_hint(query)
+            normalized = re.sub(r"\s+", " ", query).strip()
+            if self._query_within_brave_limits(normalized):
+                return normalized
+
+            # Prefer keeping every role and dropping the portal union before
+            # sacrificing role coverage because final source validation is strict.
+            if portal_scoped:
+                portal_scoped = False
+                continue
+            active_roles.pop()
+        return ""
+
     def _focus_queries(
         self,
         focus: dict[str, Any],
         focus_budget: int,
-        groups: list[str],
-        locations: list[str],
-        configured_roles_per_query: int,
     ) -> list[str]:
         roles = self._dedupe_text(focus.get("roles", []))
-        if not roles or focus_budget <= 0:
+        chunks = self._balanced_chunks(roles, focus_budget)
+        if not chunks:
             return []
 
-        roles_per_query = max(
-            configured_roles_per_query,
-            math.ceil(len(roles) / focus_budget),
-        )
-        chunks = [
-            roles[index : index + roles_per_query]
-            for index in range(0, len(roles), roles_per_query)
-        ]
-
         output: list[str] = []
-        seen_queries: set[str] = set()
-        max_attempts = max(
-            focus_budget * max(4, len(groups)),
-            len(chunks) * len(groups) * 2,
-        )
-
-        for attempt in range(max_attempts):
-            if len(output) >= focus_budget:
-                break
-
-            chunk_index = attempt % len(chunks)
-            cycle = attempt // len(chunks)
-            group = groups[(chunk_index + cycle) % len(groups)]
-            source_filter = self._source_query_filter(group)
-            query, used_locations = self._fit_scoped_query(
-                chunks[chunk_index],
-                source_filter,
-                group,
-                locations,
-            )
+        for index, chunk in enumerate(chunks):
+            # One broad-web request per focus preserves discovery of official
+            # company/university/ATS career pages. The rest target all selected
+            # job portals in one query to maximise usable results per API call.
+            portal_scoped = index < len(chunks) - 1
+            query = self._fit_high_recall_query(chunk, portal_scoped=portal_scoped)
             if not query:
                 continue
-
-            marker = query.casefold()
-            if marker in seen_queries or marker in self.query_source_groups:
-                continue
-            seen_queries.add(marker)
-
             output.append(query)
-            self.query_source_groups[marker] = group
             self.executed_query_plan.append(
                 {
                     "focus": str(focus.get("id", "ALL")),
                     "focus_label": str(focus.get("label", "All Roles")),
                     "focus_weight": float(focus.get("weight", 1.0)),
-                    "source": SOURCE_GROUP_LABELS.get(group, group),
-                    "roles": list(chunks[chunk_index]),
-                    "locations": list(used_locations),
+                    "source": "Selected portals" if portal_scoped else "Broad web",
+                    "roles": list(chunk),
+                    "locations": [],
                     "query": query,
                 }
             )
-
         return output
 
     def _source_scoped_queries(self, roles: list[str], location_hint: str) -> list[str]:
+        # Location preference is enforced during result validation. Country=ID and
+        # X-Loc headers already localise Brave, so adding every city to q only
+        # reduces recall and previously caused 12 successful requests with 0 hits.
         del location_hint
 
         clean_roles = self._dedupe_text(roles)
         if not clean_roles:
-            return []
-
-        groups = [
-            group
-            for group in self.selected_source_groups
-            if self._source_query_filter(group)
-        ]
-        if not groups:
             return []
 
         total_budget = max(
@@ -277,24 +243,70 @@ class BraveSearchJobSource(_BaseBraveSearchJobSource):
         )
         focuses = self._configured_focuses(clean_roles)
         focus_budgets = self._allocate_focus_budgets(focuses, total_budget)
-        configured_roles_per_query = max(
-            1, int(self.config.get("roles_per_query", 4))
-        )
-        locations = self._preferred_location_terms()
 
         self.query_source_groups = {}
         self.executed_query_plan = []
         output: list[str] = []
-
         for focus, focus_budget in zip(focuses, focus_budgets):
-            output.extend(
-                self._focus_queries(
-                    focus,
-                    focus_budget,
-                    groups,
-                    locations,
-                    configured_roles_per_query,
-                )
+            output.extend(self._focus_queries(focus, focus_budget))
+
+        return self._dedupe_queries(output)[:total_budget]
+
+    def _search_response(
+        self,
+        query: str,
+        headers: dict[str, str],
+        *,
+        offset: int = 0,
+    ):
+        """Perform at most one Brave network call for one logical search page.
+
+        The previous parameter-fallback loop could make several paid network
+        calls for one logical request when Brave returned 422. We already use a
+        verified conservative mode (country_only), so fail fast and let the
+        outer collector/fallback handle an invalid request without exceeding the
+        configured network-call budget.
+        """
+        mode = self._working_parameter_mode or self.preferred_parameter_mode
+        if mode not in {
+            "full",
+            "without_extra",
+            "localized_minimal",
+            "country_only",
+            "freshness_only",
+            "minimal",
+        }:
+            mode = "country_only"
+
+        params = self._params_for_mode(query, offset, mode)
+        cache_key = json.dumps(params, ensure_ascii=False, sort_keys=True)
+        cached_payload = self._read_json_cache(cache_key)
+        if cached_payload is not None:
+            self._working_parameter_mode = mode
+            self.parameter_mode = f"{mode}/cache"
+            return _CachedJsonResponse(cached_payload)
+
+        if self.cache_only:
+            legacy = self._read_legacy_query_cache(query)
+            if legacy is not None:
+                self.parameter_mode = "legacy-query/cache"
+                return _CachedJsonResponse(legacy)
+            raise RuntimeError(
+                "Cache Brave belum tersedia untuk query ini. Jalankan Live Search sekali."
             )
 
-        return self._dedupe_queries(output)
+        if self.search_api_calls >= self.max_search_requests_per_run:
+            raise RuntimeError(
+                f"Hard cap Brave tercapai: {self.search_api_calls}/"
+                f"{self.max_search_requests_per_run} network call"
+            )
+
+        # Increment before the network call so failed HTTP attempts are still
+        # counted against the hard cost cap.
+        self.search_api_calls += 1
+        response = self.http.get(self.ENDPOINT, params=params, headers=headers)
+        payload = response.json()
+        self._write_json_cache(cache_key, payload)
+        self._working_parameter_mode = mode
+        self.parameter_mode = mode
+        return _CachedJsonResponse(payload)

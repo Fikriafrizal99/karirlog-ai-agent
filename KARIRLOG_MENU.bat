@@ -276,10 +276,15 @@ echo [1] Cek koneksi Gmail
 echo [2] Buat draft Gmail pending
 echo [3] Lihat status aplikasi
 echo [4] Buka Gmail di browser
+echo [5] Buka folder untuk credentials.json
 echo [0] Kembali
 echo.
-choice /c 12340 /n /m "Pilih: "
-if errorlevel 5 goto MAIN
+choice /c 123450 /n /m "Pilih: "
+if errorlevel 6 goto MAIN
+if errorlevel 5 (
+  call :OPEN_DIR "%EXEC_ROOT%"
+  goto GMAIL
+)
 if errorlevel 4 (
   start "" "https://mail.google.com/"
   goto GMAIL
@@ -346,10 +351,15 @@ echo [2] Cek document library
 echo [3] Buka folder CV
 echo [4] Buka candidate_profile.json
 echo [5] Buka cv_library.json
+echo [6] Buat candidate profile dari template
 echo [0] Kembali
 echo.
-choice /c 123450 /n /m "Pilih: "
-if errorlevel 6 goto MAIN
+choice /c 1234560 /n /m "Pilih: "
+if errorlevel 7 goto MAIN
+if errorlevel 6 (
+  call :INIT_PROFILE
+  goto CVPROFILE
+)
 if errorlevel 5 (
   call :OPEN_FILE "%EXEC_ROOT%\config\cv_library.json"
   goto CVPROFILE
@@ -384,15 +394,17 @@ echo [4] Cek Search sources
 echo [5] Buka Search sources.json
 echo [6] Buka Execution settings.json
 echo [7] Buka folder project
-echo [8] Buka menu lama RUN_KARIRLOG.bat
+echo [8] SETUP / INSTALL
+echo [9] Buka menu lama RUN_KARIRLOG.bat
 echo [0] Kembali
 echo.
-choice /c 123456780 /n /m "Pilih: "
-if errorlevel 9 goto MAIN
-if errorlevel 8 (
+choice /c 1234567890 /n /m "Pilih: "
+if errorlevel 10 goto MAIN
+if errorlevel 9 (
   if exist "%ROOT%\RUN_KARIRLOG.bat" start "" "%ROOT%\RUN_KARIRLOG.bat"
   goto SYSTEM
 )
+if errorlevel 8 goto SETUP
 if errorlevel 7 (
   start "" "%ROOT%"
   goto SYSTEM
@@ -427,6 +439,64 @@ if errorlevel 1 (
 )
 goto SYSTEM
 
+:SETUP
+cls
+echo ============================================================
+echo                       SETUP / INSTALL
+echo ============================================================
+echo [1] Setup Search Environment
+echo [2] Setup Execution Environment
+echo [3] Setup Keduanya
+echo [4] Set / Update OpenAI API Key
+echo [5] Set / Sync Telegram
+echo [6] Buat Candidate Profile dari template
+echo [7] Buka folder CV
+echo [8] Install Playwright Chromium
+echo [9] Cek semua status
+echo [0] Kembali
+echo.
+choice /c 1234567890 /n /m "Pilih: "
+if errorlevel 10 goto SYSTEM
+if errorlevel 9 (
+  call :RUN_TOOL status
+  goto SETUP
+)
+if errorlevel 8 (
+  call :INSTALL_BROWSER
+  goto SETUP
+)
+if errorlevel 7 (
+  call :OPEN_DIR "%EXEC_ROOT%\documents\cv"
+  goto SETUP
+)
+if errorlevel 6 (
+  call :INIT_PROFILE
+  goto SETUP
+)
+if errorlevel 5 (
+  call :RUN_TOOL telegram-config
+  goto SETUP
+)
+if errorlevel 4 (
+  call :RUN_TOOL openai-config
+  goto SETUP
+)
+if errorlevel 3 (
+  call :SETUP_SEARCH_ENV
+  if errorlevel 1 goto SETUP
+  call :SETUP_EXEC_ENV
+  goto SETUP
+)
+if errorlevel 2 (
+  call :SETUP_EXEC_ENV
+  goto SETUP
+)
+if errorlevel 1 (
+  call :SETUP_SEARCH_ENV
+  goto SETUP
+)
+goto SETUP
+
 :CONTINUE_PENDING
 echo.
 echo Melanjutkan queue tanpa analisis ulang...
@@ -434,9 +504,113 @@ call :RUN_EXEC create-gmail-drafts --limit 10
 call :RUN_EXEC assist-portal-queue --limit 50
 exit /b 0
 
+:SETUP_SEARCH_ENV
+echo.
+echo ============================================================
+echo SETUP SEARCH ENVIRONMENT
+echo ============================================================
+if not exist "%SEARCH_PY%" (
+  echo Membuat Search .venv...
+  py -3 -m venv "%SEARCH_ROOT%\.venv"
+  if errorlevel 1 (
+    echo ERROR: gagal membuat Search .venv. Pastikan Python tersedia melalui command py -3.
+    pause
+    exit /b 2
+  )
+) else (
+  echo Search .venv sudah ada. Tidak dihapus.
+)
+pushd "%SEARCH_ROOT%"
+"%SEARCH_PY%" -m pip install --upgrade pip
+if errorlevel 1 (
+  popd
+  echo ERROR: gagal upgrade pip Search.
+  pause
+  exit /b 2
+)
+"%SEARCH_PY%" -m pip install -r requirements.txt
+set "RC=%ERRORLEVEL%"
+popd
+if not "%RC%"=="0" (
+  echo ERROR: instalasi dependency Search gagal.
+  pause
+  exit /b %RC%
+)
+echo Search environment READY.
+pause
+exit /b 0
+
+:SETUP_EXEC_ENV
+echo.
+echo ============================================================
+echo SETUP EXECUTION ENVIRONMENT
+echo ============================================================
+if not exist "%EXEC_PY%" (
+  echo Membuat Execution .venv...
+  py -3 -m venv "%EXEC_ROOT%\.venv"
+  if errorlevel 1 (
+    echo ERROR: gagal membuat Execution .venv. Pastikan Python tersedia melalui command py -3.
+    pause
+    exit /b 2
+  )
+) else (
+  echo Execution .venv sudah ada. Tidak dihapus.
+)
+pushd "%EXEC_ROOT%"
+"%EXEC_PY%" -m pip install --upgrade pip
+if errorlevel 1 (
+  popd
+  echo ERROR: gagal upgrade pip Execution.
+  pause
+  exit /b 2
+)
+"%EXEC_PY%" -m pip install -r requirements.txt
+set "RC=%ERRORLEVEL%"
+popd
+if not "%RC%"=="0" (
+  echo ERROR: instalasi dependency Execution gagal.
+  pause
+  exit /b %RC%
+)
+echo Execution environment READY.
+pause
+exit /b 0
+
+:INSTALL_BROWSER
+if not exist "%EXEC_PY%" (
+  echo ERROR: setup Execution Environment dulu.
+  pause
+  exit /b 2
+)
+"%EXEC_PY%" -m playwright install chromium
+set "RC=%ERRORLEVEL%"
+if "%RC%"=="0" (echo Playwright Chromium READY.) else (echo ERROR: instalasi Chromium gagal.)
+pause
+exit /b %RC%
+
+:INIT_PROFILE
+set "PROFILE=%EXEC_ROOT%\config\candidate_profile.json"
+set "PROFILE_EXAMPLE=%EXEC_ROOT%\config\candidate_profile.example.json"
+if exist "%PROFILE%" (
+  echo Candidate profile sudah ada. File tidak ditimpa.
+  start "" notepad.exe "%PROFILE%"
+  exit /b 0
+)
+if not exist "%PROFILE_EXAMPLE%" (
+  echo ERROR: candidate_profile.example.json tidak ditemukan.
+  pause
+  exit /b 2
+)
+copy /y "%PROFILE_EXAMPLE%" "%PROFILE%" >nul
+echo Candidate profile dibuat dari template.
+echo Isi data pribadi lalu simpan. File ini di-ignore Git.
+start "" notepad.exe "%PROFILE%"
+exit /b 0
+
 :RUN_APPLY_ASSISTANT
 if not exist "%EXEC_PY%" (
   echo ERROR: Execution .venv belum tersedia.
+  echo Buka SYSTEM / SETTINGS ^> SETUP / INSTALL ^> Setup Execution Environment.
   pause
   exit /b 2
 )
@@ -451,6 +625,7 @@ exit /b %RC%
 :RUN_EXEC
 if not exist "%EXEC_PY%" (
   echo ERROR: Execution .venv belum tersedia.
+  echo Buka SYSTEM / SETTINGS ^> SETUP / INSTALL ^> Setup Execution Environment.
   pause
   exit /b 2
 )

@@ -24,6 +24,11 @@ def test_root_menu_targets_separated_search_and_execution() -> None:
     assert "gmail" in menu
     assert "job portal" in menu
     assert "api usage / cost audit" in menu
+    assert "setup / install" in menu
+    assert "setup search environment" in menu
+    assert "setup execution environment" in menu
+    assert "set / update openai api key" in menu
+    assert "candidate_profile.example.json" in menu
     assert "karirlog-tools\\control.py" in menu
 
 
@@ -48,3 +53,6 @@ def test_control_helper_never_prints_secret_values_by_default() -> None:
     assert "BRAVE_USD_PER_1000_REQUESTS" in source
     assert "OPENAI_PRICING" in source
     assert "command_telegram_config" in source
+    assert "command_openai_config" in source
+    assert "getpass.getpass" in source
+    assert '"OPENAI_API_KEY": key' in source

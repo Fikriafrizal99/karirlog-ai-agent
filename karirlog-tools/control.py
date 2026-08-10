@@ -167,6 +167,25 @@ def command_telegram_config() -> int:
     return 0
 
 
+def command_openai_config() -> int:
+    exec_env = _load_env_file(EXEC_ROOT / ".env")
+    current_key = exec_env.get("OPENAI_API_KEY", "").strip() or os.getenv("OPENAI_API_KEY", "").strip()
+    print("SET / UPDATE OPENAI API KEY")
+    print("=" * 42)
+    print("API key tidak akan ditampilkan atau dicetak ulang.")
+    key = getpass.getpass(
+        "OpenAI API Key (Enter = pertahankan yang ada): "
+    ).strip()
+    key = key or current_key
+    if not key:
+        print("ERROR: OPENAI_API_KEY belum tersedia.")
+        return 2
+    _write_env_values(EXEC_ROOT / ".env", {"OPENAI_API_KEY": key})
+    print("OpenAI API key tersimpan di karirlog-execution/.env.")
+    print("File .env di-ignore Git dan tidak ikut commit.")
+    return 0
+
+
 def _telegram_credentials() -> tuple[str, str]:
     return _env_value("TELEGRAM_BOT_TOKEN"), _env_value("TELEGRAM_CHAT_ID")
 
@@ -326,6 +345,7 @@ def make_parser() -> argparse.ArgumentParser:
     sub.add_parser("telegram-status")
     sub.add_parser("telegram-config")
     sub.add_parser("telegram-test")
+    sub.add_parser("openai-config")
     audit = sub.add_parser("api-audit")
     audit.add_argument("--jobs", type=int, default=30)
     return parser
@@ -341,6 +361,8 @@ def main() -> int:
         return command_telegram_config()
     if args.command == "telegram-test":
         return command_telegram_test()
+    if args.command == "openai-config":
+        return command_openai_config()
     if args.command == "api-audit":
         return command_api_audit(args.jobs)
     return 2

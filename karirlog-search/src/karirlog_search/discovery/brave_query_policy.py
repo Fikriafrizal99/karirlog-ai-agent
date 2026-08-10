@@ -11,21 +11,15 @@ from .brave_source import (
 )
 
 
-PORTAL_SEARCH_FILTER = (
-    "(site:kitalulus.com OR site:id.jobstreet.com OR site:linkedin.com "
-    "OR site:glints.com OR site:kalibrr.com OR site:kalibrr.id)"
-)
-
-
 class BraveSearchJobSource(_BaseBraveSearchJobSource):
     """High-recall Brave query policy for manual Search -> CSV handoff.
 
-    The budget is allocated by configured search focus (currently 7 Core +
-    5 General for a 12-request run). Queries search several selected portals
-    at once instead of locking every request to one portal/location. The last
-    query of each focus is intentionally broad so official career/ATS pages can
-    still be discovered. Final URL/source/role/location validation remains in
-    the base collector before a job reaches the CSV.
+    The 12-request budget is allocated by configured focus (currently 7 Core +
+    5 General). Brave queries stay intentionally simple and broad: only exact
+    target-role phrases joined with OR. Country=ID localises the search, while
+    source, role, location, freshness, detail-page and quality validation happen
+    after Brave returns results. This avoids spending the API budget on complex
+    multi-site/location expressions that previously returned zero results.
     """
 
     @staticmethod
@@ -166,28 +160,14 @@ class BraveSearchJobSource(_BaseBraveSearchJobSource):
             cursor += size
         return chunks
 
-    def _fit_high_recall_query(
-        self,
-        roles: list[str],
-        *,
-        portal_scoped: bool,
-    ) -> str:
+    def _fit_high_recall_query(self, roles: list[str]) -> str:
         active_roles = list(roles)
         while active_roles:
-            role_group = self._quoted_or(active_roles)
-            query = f"({role_group})" if len(active_roles) > 1 else role_group
-            if portal_scoped:
-                query = f"{query} {PORTAL_SEARCH_FILTER}"
+            query = self._quoted_or(active_roles)
             query = self._apply_detail_query_hint(query)
             normalized = re.sub(r"\s+", " ", query).strip()
             if self._query_within_brave_limits(normalized):
                 return normalized
-
-            # Prefer keeping every role and dropping the portal union before
-            # sacrificing role coverage because final source validation is strict.
-            if portal_scoped:
-                portal_scoped = False
-                continue
             active_roles.pop()
         return ""
 
@@ -202,12 +182,8 @@ class BraveSearchJobSource(_BaseBraveSearchJobSource):
             return []
 
         output: list[str] = []
-        for index, chunk in enumerate(chunks):
-            # One broad-web request per focus preserves discovery of official
-            # company/university/ATS career pages. The rest target all selected
-            # job portals in one query to maximise usable results per API call.
-            portal_scoped = index < len(chunks) - 1
-            query = self._fit_high_recall_query(chunk, portal_scoped=portal_scoped)
+        for chunk in chunks:
+            query = self._fit_high_recall_query(chunk)
             if not query:
                 continue
             output.append(query)
@@ -216,7 +192,7 @@ class BraveSearchJobSource(_BaseBraveSearchJobSource):
                     "focus": str(focus.get("id", "ALL")),
                     "focus_label": str(focus.get("label", "All Roles")),
                     "focus_weight": float(focus.get("weight", 1.0)),
-                    "source": "Selected portals" if portal_scoped else "Broad web",
+                    "source": "Broad web -> post-filter sources",
                     "roles": list(chunk),
                     "locations": [],
                     "query": query,
@@ -225,9 +201,9 @@ class BraveSearchJobSource(_BaseBraveSearchJobSource):
         return output
 
     def _source_scoped_queries(self, roles: list[str], location_hint: str) -> list[str]:
-        # Location preference is enforced during result validation. Country=ID and
-        # X-Loc headers already localise Brave, so adding every city to q only
-        # reduces recall and previously caused 12 successful requests with 0 hits.
+        # Country=ID and X-Loc headers localise Brave. Preferred locations and
+        # selected source domains are validated after results arrive, rather than
+        # narrowing the search expression itself.
         del location_hint
 
         clean_roles = self._dedupe_text(roles)
@@ -259,14 +235,7 @@ class BraveSearchJobSource(_BaseBraveSearchJobSource):
         *,
         offset: int = 0,
     ):
-        """Perform at most one Brave network call for one logical search page.
-
-        The previous parameter-fallback loop could make several paid network
-        calls for one logical request when Brave returned 422. We already use a
-        verified conservative mode (country_only), so fail fast and let the
-        outer collector/fallback handle an invalid request without exceeding the
-        configured network-call budget.
-        """
+        """Perform at most one Brave network call for one logical search page."""
         mode = self._working_parameter_mode or self.preferred_parameter_mode
         if mode not in {
             "full",
@@ -301,8 +270,8 @@ class BraveSearchJobSource(_BaseBraveSearchJobSource):
                 f"{self.max_search_requests_per_run} network call"
             )
 
-        # Increment before the network call so failed HTTP attempts are still
-        # counted against the hard cost cap.
+        # Increment before the network call so failed HTTP attempts also count
+        # against the hard cost cap.
         self.search_api_calls += 1
         response = self.http.get(self.ENDPOINT, params=params, headers=headers)
         payload = response.json()

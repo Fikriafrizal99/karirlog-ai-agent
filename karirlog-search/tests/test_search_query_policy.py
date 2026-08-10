@@ -72,43 +72,28 @@ def test_location_list_is_not_embedded_in_brave_query() -> None:
     queries = source._queries()
     combined = "\n".join(queries)
 
-    # Country localisation is supplied by Brave parameters/X-Loc headers and
-    # preferred locations are enforced after results are returned. This avoids
-    # the old over-constrained query that returned 0 results for all 12 calls.
     assert brave["country"] == "ID"
     for location in profile["preferred_locations"]:
         assert f'"{location}"' not in combined
 
 
-def test_query_mix_prefers_selected_portals_but_keeps_broad_web_discovery() -> None:
+def test_all_queries_are_broad_and_sources_are_post_filtered() -> None:
     source, _, _ = _source()
     queries = source._queries()
 
-    scopes = Counter(str(item.get("source")) for item in source.executed_query_plan)
-    assert scopes["Selected portals"] == 10
-    assert scopes["Broad web"] == 2
     assert len(source.executed_query_plan) == len(queries) == 12
-
-    portal_queries = [
-        item["query"]
+    assert source.query_source_groups == {}
+    assert all(
+        item["source"] == "Broad web -> post-filter sources"
         for item in source.executed_query_plan
-        if item["source"] == "Selected portals"
-    ]
-    assert portal_queries
-    assert all("site:kitalulus.com" in query for query in portal_queries)
-    assert all("site:id.jobstreet.com" in query for query in portal_queries)
-    assert all("site:linkedin.com" in query for query in portal_queries)
-    assert all("site:glints.com" in query for query in portal_queries)
-    assert all("site:kalibrr.com" in query for query in portal_queries)
+    )
+    assert all("site:" not in query.casefold() for query in queries)
 
 
-def test_generated_queries_respect_brave_limits_without_single_source_lock() -> None:
+def test_generated_queries_respect_brave_limits() -> None:
     source, _, _ = _source()
     queries = source._queries()
 
-    # Query results are filtered to selected sources after Brave responds, so a
-    # query is no longer mapped to exactly one source group.
-    assert source.query_source_groups == {}
     for item, query in zip(source.executed_query_plan, queries):
         assert item["focus"] in {"CORE_EXPERIENCE", "GENERAL_TRANSFERABLE"}
         assert item["focus_label"]

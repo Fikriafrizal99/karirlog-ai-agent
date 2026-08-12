@@ -1,7 +1,7 @@
 """One-command KarirLog Execution + application assistance.
 
 Daily flow:
-    reviewed CSV -> analyze -> build packages -> Gmail drafts -> portal queue
+    reviewed CSV -> analyze/trust -> build packages -> Gmail drafts -> portal queue
 
 The private candidate profile stays local. Public execution focus rules are
 merged into a temporary runtime profile and deleted after the run.
@@ -27,6 +27,9 @@ except ImportError:
     load_dotenv = None
 
 import main as execution_main
+import karirlog_execution.application_builder as application_builder
+import karirlog_execution.pipeline as execution_pipeline
+from karirlog_execution.models import AnalysisResult, Job
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -110,6 +113,46 @@ def _write_runtime_profile(profile: dict[str, Any]) -> Path:
         handle.close()
 
 
+def trusted_csv_analysis(
+    job: Job,
+    profile: dict[str, Any],
+    settings: dict[str, Any],
+) -> AnalysisResult:
+    """Trust a manually reviewed CSV row without invoking AI or the rule engine."""
+    del profile, settings
+    return AnalysisResult(
+        score=100,
+        decision="APPLY",
+        analysis_mode="TRUSTED_CSV",
+        provider="manual_review",
+        model="",
+        confidence=100,
+        summary=(
+            "Lowongan diterima dari CSV yang sudah direview. "
+            "AI dan rule engine dilewati untuk run ini."
+        ),
+        seniority_level="REVIEWED_INPUT",
+        estimated_years_required=0,
+        matched_roles=[job.title] if job.title.strip() else [],
+        reasons=[
+            "Trusted CSV mode: baris input dianggap sudah lolos review manual.",
+            "Decision dikunci APPLY tanpa panggilan OpenAI dan tanpa scoring rule.",
+        ],
+    )
+
+
+def portal_only_destination(job: Job) -> tuple[str, str, list[str]]:
+    """Force a valid job URL to be used as the apply destination, ignoring email."""
+    url = job.url.strip()
+    warnings: list[str] = []
+    if job.apply_email.strip():
+        warnings.append("Mode portal-only aktif: apply_email diabaikan untuk run ini")
+    if url.lower().startswith(("http://", "https://")):
+        return "PORTAL", url, warnings
+    warnings.append("Mode portal-only membutuhkan URL apply yang valid")
+    return "UNAVAILABLE", "", warnings
+
+
 def run_assistant(args: argparse.Namespace) -> int:
     if load_dotenv is not None:
         load_dotenv(_ROOT / ".env", override=True)
@@ -146,26 +189,50 @@ def run_assistant(args: argparse.Namespace) -> int:
     gmail_status = "SKIPPED"
     portal_status = "SKIPPED"
 
+    requested_mode = str(args.analysis_mode or settings.get("analysis_mode", "ai_with_fallback"))
+    trusted_mode = requested_mode == "trusted_csv"
+    original_analyze_job = execution_pipeline.analyze_job
+    original_destination = application_builder.resolve_apply_destination
+
+    if trusted_mode:
+        execution_pipeline.analyze_job = trusted_csv_analysis
+    if args.portal_only:
+        application_builder.resolve_apply_destination = portal_only_destination
+
     try:
         print("KARIRLOG APPLY ASSISTANT")
         print("=======================")
         print(f"Input CSV      : {args.input or settings.get('input_csv', 'data/input/discovery_latest.csv')}")
+        if trusted_mode:
+            print("Analysis       : TRUSTED CSV - AI OFF, RULE OFF, semua baris -> APPLY")
+        elif requested_mode == "rule_only":
+            print("Analysis       : RULE ONLY - OpenAI OFF")
+        else:
+            print(f"Analysis       : {requested_mode}")
         print("Focus          : Core Experience + General Transferable")
-        print("Delivery       : Gmail draft + portal assist (tanpa auto-submit)")
+        if args.portal_only:
+            print("Apply channel  : PORTAL ONLY - apply_email diabaikan")
+        else:
+            print("Apply channel  : AUTO - email bila valid, selain itu portal")
+        print(
+            "Delivery       : "
+            + ("Gmail SKIP | " if args.skip_gmail else "Gmail ON | ")
+            + ("Portal SKIP" if args.skip_portal else "Portal ON")
+        )
         print()
 
         execution_rc = execution_main.command_execute(
             str(runtime_profile),
             str(settings_path),
             args.input,
-            args.analysis_mode,
+            requested_mode,
             force_reprocess=bool(args.force_reprocess),
             rebuild_packages=bool(args.rebuild_packages),
         )
 
         if not args.skip_gmail and assistant_cfg.get("auto_create_gmail_drafts", True):
             try:
-                limit = max(1, int(assistant_cfg.get("gmail_limit", 10)))
+                limit = max(1, int(args.gmail_limit or assistant_cfg.get("gmail_limit", 10)))
                 gmail_rc = execution_main.command_create_gmail_drafts(
                     str(runtime_profile),
                     str(settings_path),
@@ -178,7 +245,7 @@ def run_assistant(args: argparse.Namespace) -> int:
 
         if not args.skip_portal and assistant_cfg.get("auto_assist_portal_queue", True):
             try:
-                limit = max(1, int(assistant_cfg.get("portal_limit", 50)))
+                limit = max(1, int(args.portal_limit or assistant_cfg.get("portal_limit", 50)))
                 portal_rc = execution_main.command_assist_portal_queue(
                     str(runtime_profile),
                     str(settings_path),
@@ -196,6 +263,8 @@ def run_assistant(args: argparse.Namespace) -> int:
         print("Final submit tetap kamu konfirmasi sendiri.")
         return execution_rc
     finally:
+        execution_pipeline.analyze_job = original_analyze_job
+        application_builder.resolve_apply_destination = original_destination
         try:
             runtime_profile.unlink(missing_ok=True)
         except OSError:
@@ -217,10 +286,27 @@ def make_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--analysis-mode",
-        choices=["rule_only", "ai_with_fallback", "ai_required"],
+        choices=["rule_only", "ai_with_fallback", "ai_required", "trusted_csv"],
     )
     parser.add_argument("--force-reprocess", action="store_true")
     parser.add_argument("--rebuild-packages", action="store_true")
+    parser.add_argument(
+        "--portal-only",
+        action="store_true",
+        help="Paksa memakai URL portal dan abaikan apply_email untuk run ini",
+    )
+    parser.add_argument(
+        "--portal-limit",
+        type=int,
+        default=None,
+        help="Override jumlah maksimum portal queue untuk run ini",
+    )
+    parser.add_argument(
+        "--gmail-limit",
+        type=int,
+        default=None,
+        help="Override jumlah maksimum Gmail draft untuk run ini",
+    )
     parser.add_argument(
         "--skip-gmail",
         action="store_true",

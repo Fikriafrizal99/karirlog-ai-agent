@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "document_types": {
+    "ijazah": {
+      "file_keywords": ["ijazah", "diploma", "degree_certificate", "degree certificate"],
+      "requirement_keywords": [
+        "lampirkan ijazah", "sertakan ijazah", "unggah ijazah", "upload ijazah",
+        "attach diploma", "upload diploma", "attach degree certificate", "upload degree certificate"
+      ]
+    },
+    "transkrip": {
+      "file_keywords": ["transkrip", "transcript", "academic_transcript", "academic transcript"],
+      "requirement_keywords": [
+        "lampirkan transkrip", "sertakan transkrip", "unggah transkrip", "upload transkrip",
+        "attach transcript", "upload transcript", "academic transcript required"
+      ]
+    },
+    "sertifikat": {
+      "file_keywords": ["sertifikat", "certificate", "certification"],
+      "requirement_keywords": [
+        "lampirkan sertifikat", "sertakan sertifikat", "unggah sertifikat",
+        "attach certificate", "upload certificate", "certificate attachment required"
+      ]
+    },
+    "portfolio": {
+      "file_keywords": ["portfolio", "portofolio", "project_sample", "project sample"],
+      "requirement_keywords": [
+        "lampirkan portfolio", "lampirkan portofolio", "sertakan portfolio", "sertakan portofolio",
+        "upload portfolio", "attach portfolio", "portfolio required", "portfolio is required"
+      ]
+    }
+  },
+  "sensitive_keywords": [
+    "ktp", "kartu_tanda_penduduk", "kartu tanda penduduk", "kk", "kartu_keluarga",
+    "kartu keluarga", "npwp", "passport", "paspor", "bank_account", "bank account",
+    "rekening", "buku_rekening", "akta_kelahiran", "akta kelahiran", "medical", "medis"
+  ]
+}

@@ -24,6 +24,7 @@ config/*profile*.json
 config/*personal*.json
 config/*local*.json
 config/*secret*.json
+config/profil.json
 
 # =========================================================
 # DOKUMEN PRIBADI
@@ -43,8 +44,8 @@ application_documents/
 *.sqlite
 *.sqlite3
 
-data/karirlog.db
 data/browser_profile/
+data/browser_profile_external/
 data/output/
 data/runtime/
 data/state/
@@ -53,6 +54,9 @@ data/downloads/
 data/screenshots/
 data/applications/
 data/packages/
+data/backup/
+data/backups/
+data/upgrade_backup/
 
 # Tetap izinkan placeholder folder
 !data/output/.gitkeep
@@ -124,33 +128,13 @@ Desktop.ini
 # PowerShell history
 ConsoleHost_history.txt
 
-# Browser profile eksternal — cookies, session, login
-data/browser_profile_external/
-
 # Input pribadi dan daftar lowongan
 data/input/*
 !data/input/jobs_sample.csv
 !data/input/.gitkeep
-
-# Backup konfigurasi lama
-data/upgrade_backup/
 
 # Backup dan installer maintenance lama
 launcher/maintenance/backups/
 launcher/maintenance/legacy_root/
 launcher/maintenance/legacy_installers/
 launcher/maintenance/installed_patch/
-
-# Backup runtime dan snapshot pribadi
-data/backup/
-data/backups/
-
-# Profil pengguna asli
-config/profil.json
-
-# Backup runtime dan snapshot pribadi
-data/backup/
-data/backups/
-
-# Profil pengguna asli
-config/profil.json

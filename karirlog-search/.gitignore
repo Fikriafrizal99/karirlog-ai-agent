@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+data/cache/*
+!data/cache/.gitkeep
+data/output/*
+!data/output/.gitkeep
+diagnostics/*
+!diagnostics/.gitkeep
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+*.log
+discovery_*.csv

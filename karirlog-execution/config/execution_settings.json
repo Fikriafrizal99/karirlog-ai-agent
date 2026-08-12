@@ -1,0 +1,85 @@
+{
+  "database_path": "data/database/karirlog.db",
+  "input_csv": "data/input/discovery_latest.csv",
+  "output_dir": "data/output",
+  "apply_threshold": 60,
+  "review_threshold": 40,
+  "analysis_strategy": "high_recall_guarded",
+  "build_application_for": [
+    "APPLY"
+  ],
+  "auto_apply_mode": "guarded_delivery",
+  "execution_focus_config": "config/execution_focuses.json",
+  "apply_assistant": {
+    "auto_create_gmail_drafts": true,
+    "auto_assist_portal_queue": true,
+    "gmail_limit": 10,
+    "portal_limit": 50
+  },
+  "telegram_enabled": true,
+  "telegram_bot_token_env": "TELEGRAM_BOT_TOKEN",
+  "telegram_chat_id_env": "TELEGRAM_CHAT_ID",
+  "analysis_mode": "ai_with_fallback",
+  "ai_provider": "openai",
+  "ai_model": "gpt-5-mini",
+  "openai_api_key_env": "OPENAI_API_KEY",
+  "openai_responses_url": "https://api.openai.com/v1/responses",
+  "ai_timeout_seconds": 45,
+  "ai_max_output_tokens": 1800,
+  "ai_max_description_chars": 8000,
+  "ai_reasoning_effort": "minimal",
+  "reanalyze_fallback_when_ai_ready": true,
+  "cv_library_config": "config/cv_library.json",
+  "document_rules_config": "config/document_library.json",
+  "allowed_cv_extensions": [
+    ".pdf"
+  ],
+  "min_cv_size_bytes": 100,
+  "max_cv_size_mb": 10,
+  "cv_min_selection_score": 30,
+  "cv_ambiguity_margin": 5,
+  "copy_selected_cv_to_package": true,
+  "rebuild_incomplete_applications": true,
+  "force_rebuild_application_packages": false,
+  "gmail": {
+    "enabled": true,
+    "credentials_path": "credentials.json",
+    "token_path": "data/secrets/gmail_token.json",
+    "send_mode": "draft_only",
+    "auto_create_drafts": true,
+    "max_drafts_per_run": 10,
+    "max_sends_per_day": 5,
+    "approval_ttl_minutes": 30
+  },
+  "portal_assistant": {
+    "enabled": true,
+    "headless": false,
+    "user_data_dir": "data/browser_profile",
+    "artifact_dir": "data/output/portal_sessions",
+    "timeout_ms": 45000,
+    "submit_mode": "manual_only",
+    "browser_mode": "external_chrome",
+    "external_user_data_dir": "data/browser_profile_external",
+    "cdp_url": "http://127.0.0.1:9222",
+    "login_url": "https://www.kitalulus.com/",
+    "auto_launch_external_browser": true,
+    "cdp_start_timeout_seconds": 15,
+    "show_helper_panel": true,
+    "slow_mo_ms": 0,
+    "navigation_retry_count": 3,
+    "navigation_retry_delay_seconds": 0.75,
+    "close_completed_queue_tabs": true
+  },
+  "scheduler": {
+    "enabled": false,
+    "timezone": "Asia/Jakarta",
+    "run_times": [
+      "07:30"
+    ],
+    "create_gmail_drafts": true
+  },
+  "telegram_application_report": {
+    "auto_after_portal_queue": true,
+    "limit": 50
+  }
+}

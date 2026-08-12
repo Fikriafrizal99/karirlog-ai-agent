@@ -24,6 +24,19 @@ def build_summary(stats: dict[str, Any]) -> str:
     skip_count = int(stats.get("skip_count", 0) or 0)
     decided = apply_count + review_count + skip_count
     apply_rate = round((apply_count / decided) * 100) if decided else 0
+
+    analysis_mode = str(stats.get("analysis_mode", "-") or "-").strip().lower()
+    ai_count = int(stats.get("ai_analyzed", 0) or 0)
+    rule_count = int(stats.get("rule_analyzed", 0) or 0)
+    trusted_count = int(stats.get("trusted_csv_analyzed", 0) or 0)
+    # The core pipeline historically counts every non-AI AnalysisResult as
+    # rule-based. Trusted CSV intentionally bypasses both AI and rules, so show
+    # the real operator-facing meaning without mislabelling the run.
+    if analysis_mode == "trusted_csv":
+        trusted_count = trusted_count or (ai_count + rule_count)
+        ai_count = 0
+        rule_count = 0
+
     return (
         "🤖 KARIRLOG AI AGENT V1.0\n"
         "━━━━━━━━━━━━━━━━━━━━\n"
@@ -38,8 +51,9 @@ def build_summary(stats: dict[str, Any]) -> str:
         f"Duplikat lintas src: {stats.get('cross_source_duplicates', 0)}\n"
         f"Fallback CSV       : {fallback}\n"
         f"Collector gagal    : {failed} | dilewati: {skipped}\n"
-        f"🧠 AI              : {stats.get('ai_analyzed', 0)}\n"
-        f"📐 Rule            : {stats.get('rule_analyzed', 0)}\n"
+        f"🧠 AI              : {ai_count}\n"
+        f"📐 Rule            : {rule_count}\n"
+        f"✅ Trusted CSV     : {trusted_count}\n"
         f"↩️ AI fallback     : {stats.get('ai_fallbacks', 0)}\n"
         f"⚠️ Analysis error  : {stats.get('analysis_failures', 0)}\n"
         f"✅ APPLY           : {apply_count}\n"

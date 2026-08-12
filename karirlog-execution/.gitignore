@@ -4,13 +4,14 @@
 credentials.json
 data/secrets/*
 !data/secrets/.gitkeep
-data/browser_profile*/
-!data/browser_profile/
+data/browser_profile/*
 !data/browser_profile/.gitkeep
-!data/browser_profile_external/
+data/browser_profile_external/*
 !data/browser_profile_external/.gitkeep
 data/cache/*
 !data/cache/.gitkeep
+data/input/*
+!data/input/.gitkeep
 data/database/*.db
 data/database/*.db-*
 data/output/*
